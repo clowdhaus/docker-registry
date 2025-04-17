@@ -18,7 +18,6 @@ committed into git.
 
 ### Install `cfssl` and Re-generate Certificates
 
-    $ ./download-cfssl.sh
     $ ./create-ca.sh
     $ ./create-localhost.sh
 

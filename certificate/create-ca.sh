@@ -4,10 +4,9 @@ set -e
 
 pushd output
 
-../cfssl gencert \
+cfssl gencert \
     -config ../profiles.json \
     -initca ../ca.json \
-    | ../cfssljson -bare ca
+    | cfssljson -bare ca
 
 popd
-

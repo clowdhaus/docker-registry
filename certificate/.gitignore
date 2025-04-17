@@ -1,3 +1,0 @@
-# Don't commit the binaries; they are only needed to occasionally regenerate the certificates.
-cfssl
-cfssljson

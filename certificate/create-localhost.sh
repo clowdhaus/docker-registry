@@ -4,13 +4,13 @@ set -e
 
 pushd output
 
-../cfssl gencert \
+cfssl gencert \
     -ca ca.pem \
     -ca-key ca-key.pem \
     -config ../profiles.json \
     -profile=server \
     ../localhost.json \
-    | ../cfssljson -bare localhost
+    | cfssljson -bare localhost
 
 cat localhost.pem ca.pem > localhost.crt
 
@@ -24,4 +24,3 @@ openssl \
     -out localhost-key-pkcs8.pem
 
 popd
-
