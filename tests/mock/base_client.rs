@@ -130,15 +130,12 @@ fn test_base_api_error(fixture: String) {
 }
 
 mod test_custom_root_certificate {
-  use std::{
-    error::Error,
-    net::TcpListener,
-    path::{Path, PathBuf},
-  };
+  use std::{error::Error, net::TcpListener};
 
   use docker_registry::v2::Client;
   use native_tls::{HandshakeError, Identity, TlsStream};
   use reqwest::Certificate;
+  use rustls_cert_gen::CertificateBuilder;
 
   fn run_server(listener: TcpListener, identity: Identity) -> Result<(), std::io::Error> {
     println!("Will accept tls connections at {}", listener.local_addr()?);
@@ -219,51 +216,62 @@ mod test_custom_root_certificate {
     }
   }
 
-  fn output() -> PathBuf {
-    PathBuf::from(file!())
-      .canonicalize()
-      .unwrap()
-      .parent()
-      .unwrap()
-      .parent()
-      .unwrap()
-      .parent()
-      .unwrap()
-      .join("certificate")
-      .join("output")
+  #[derive(Debug)]
+  struct CertData {
+    ca_cert: Vec<u8>,
+    localhost_cert: Vec<u8>,
+    localhost_key: Vec<u8>,
   }
 
-  fn read_output_file<F: AsRef<Path>>(file_name: F) -> Vec<u8> {
-    std::fs::read(output().join(file_name)).unwrap()
+  fn get_certs() -> CertData {
+    let ca = CertificateBuilder::new()
+      .certificate_authority()
+      .country_name("USA")
+      .expect("Failed to set country name")
+      .organization_name("Automated Testing CA")
+      .build()
+      .expect("Failed to build CA");
+    let ca_key = ca.serialize_pem();
+
+    let mut entity = CertificateBuilder::new().end_entity().common_name("localhost");
+    entity.server_auth();
+    let entity_key = entity.build(&ca).expect("Failed to build entity").serialize_pem();
+
+    CertData {
+      ca_cert: ca_key.cert_pem.as_bytes().to_vec(),
+      localhost_cert: entity_key.cert_pem.as_bytes().to_vec(),
+      localhost_key: entity_key.private_key_pem.as_bytes().to_vec(),
+    }
   }
 
   #[tokio::test]
   async fn without_ca() {
-    with_ca_cert(None).await
+    with_ca_cert(false).await
   }
 
   #[tokio::test]
   pub async fn with_ca() {
-    let ca_bytes = read_output_file("ca.pem");
-    let ca = Certificate::from_pem(&ca_bytes).unwrap();
-
-    with_ca_cert(Some(ca)).await;
+    with_ca_cert(true).await;
   }
 
-  async fn with_ca_cert(ca_certificate: Option<Certificate>) {
-    let registry_bytes = read_output_file("localhost.crt");
+  // ToDo: fails on macos - https://github.com/seanmonstar/reqwest/issues/2321
+  async fn with_ca_cert(with_ca: bool) {
+    let certs = get_certs();
+    let mut ca_cert = None;
+    if with_ca {
+      ca_cert = Some(Certificate::from_pem(&certs.ca_cert).expect("Failed to create CA certificate"));
+    }
 
-    let registry_key_bytes = read_output_file("localhost-key-pkcs8.pem");
-    let registry_identity = Identity::from_pkcs8(&registry_bytes, &registry_key_bytes).unwrap();
+    let registry_identity =
+      Identity::from_pkcs8(&certs.localhost_cert, &certs.localhost_key).expect("Failed to create registry identity");
 
     let listener = TcpListener::bind("localhost:0").unwrap();
 
-    // local_addr returns an IP address, but we need to use a name for TLS,
-    // so extract only the port number.
+    // local_addr returns an IP address, but we need to use a name for TLS, so extract only the port number.
     let listener_port = listener.local_addr().unwrap().port();
     let client_host = format!("localhost:{listener_port}");
     let t_server = std::thread::spawn(move || run_server(listener, registry_identity));
-    let t_client = tokio::task::spawn(async move { run_client(ca_certificate, client_host).await });
+    let t_client = tokio::task::spawn(async move { run_client(ca_cert, client_host).await });
 
     println!("Joining client");
     t_client.await.unwrap();

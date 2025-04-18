@@ -49,6 +49,7 @@ dirs = "6.0"
 hyper = "1.5"
 mockito = "1.6"
 native-tls = "0.2"
+rustls-cert-gen = { version = "0.1", default-features = false, features = ["aws_lc_rs"] }
 test-case = "3.3"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"

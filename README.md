@@ -9,8 +9,8 @@ conformant to the [Docker Registry HTTP API v2](https://docs.docker.com/registry
 
 The following is a list of [Cargo features](https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-features-section) that consumers can enable or disable:
 
- * **reqwest-default-tls** *(enabled by default)*: provides TLS support via [system-specific library](https://docs.rs/native-tls) (OpenSSL on Linux)
- * **reqwest-rustls**: provides TLS support via the [rustls](https://docs.rs/rustls) library
+* **reqwest-default-tls** *(enabled by default)*: provides TLS support via [system-specific library](https://docs.rs/native-tls) (OpenSSL on Linux)
+* **reqwest-rustls**: provides TLS support via the [rustls](https://docs.rs/rustls) library
 
 ## Testing
 
@@ -25,7 +25,8 @@ This library includes additional interoperability tests against some of the most
 Those tests are not run by default as they require network access and registry credentials.
 
 They are gated behind a dedicated "test-net-private" feature and can be run as:
-```
+
+```sh
 cargo test --features test-net-private
 ```
 
@@ -35,10 +36,10 @@ Credentials for those registries must be provided via environmental flags.
 
 Licensed under either of
 
- * Apache License, Version 2.0
-   ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license
-   ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+* Apache License, Version 2.0
+   ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+* MIT license
+   ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 
