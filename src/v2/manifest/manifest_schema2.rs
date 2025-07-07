@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use log::trace;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
@@ -41,6 +42,13 @@ pub struct Config {
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct ConfigBlob {
   architecture: String,
+  config: InnerConfigBlob,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+struct InnerConfigBlob {
+  #[serde(rename = "Labels")]
+  labels: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -128,6 +136,9 @@ impl ManifestSchema2 {
   pub fn architecture(&self) -> String {
     self.config_blob.architecture.to_owned()
   }
+
+  /// Get the labels, if any, from the config
+  pub fn labels(&self) -> Option<HashMap<String, String>> { self.config_blob.config.labels.to_owned() }
 }
 
 impl ManifestObj {
