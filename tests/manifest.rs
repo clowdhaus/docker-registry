@@ -40,7 +40,23 @@ fn deserialize_manifest_v2s2_config() -> Result<docker_registry::v2::manifest::M
 
 #[test]
 fn test_deserialize_manifest_v2s2_config() -> Result<(), Box<dyn std::error::Error>> {
-  deserialize_manifest_v2s2_config()?;
+  let config = deserialize_manifest_v2s2_config()?;
+
+  match config {
+    docker_registry::v2::manifest::Manifest::S2(s) => {
+      assert_eq!(
+        HashMap::from([
+          ("io.openshift.release".to_string(), "4.1.0-rc.9".to_string()),
+          ("io.openshift.release.base-image-digest".to_string(), "sha256:d3799f6eb50a3db27e2a747dd0b9a559d1ad9d117ff569c1b40026a0839e8db4".to_string())
+        ]),
+        s.labels().unwrap_or_default()
+      );
+    }
+    _ => {
+      panic!("not the correct manifest type");
+    }
+  }
+
   Ok(())
 }
 
