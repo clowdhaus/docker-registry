@@ -47,7 +47,10 @@ fn test_deserialize_manifest_v2s2_config() -> Result<(), Box<dyn std::error::Err
       assert_eq!(
         HashMap::from([
           ("io.openshift.release".to_string(), "4.1.0-rc.9".to_string()),
-          ("io.openshift.release.base-image-digest".to_string(), "sha256:d3799f6eb50a3db27e2a747dd0b9a559d1ad9d117ff569c1b40026a0839e8db4".to_string())
+          (
+            "io.openshift.release.base-image-digest".to_string(),
+            "sha256:d3799f6eb50a3db27e2a747dd0b9a559d1ad9d117ff569c1b40026a0839e8db4".to_string()
+          )
         ]),
         s.labels().unwrap_or_default()
       );

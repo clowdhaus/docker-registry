@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use log::trace;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::errors::Result;
 pub use crate::v2::ApiErrors;
@@ -138,7 +138,9 @@ impl ManifestSchema2 {
   }
 
   /// Get the labels, if any, from the config
-  pub fn labels(&self) -> Option<HashMap<String, String>> { self.config_blob.config.labels.to_owned() }
+  pub fn labels(&self) -> Option<HashMap<String, String>> {
+    self.config_blob.config.labels.to_owned()
+  }
 }
 
 impl ManifestObj {
