@@ -48,7 +48,7 @@ fn test_quay_tags_paginate() {
   let mock1 = server
     .mock("GET", ep1.as_str())
     .with_status(200)
-    .with_header("Link", &format!(r#"<{}/v2/_tags?n=1&next_page=t1>; rel="next""#, addr))
+    .with_header("Link", &format!(r#"<{addr}/v2/_tags?n=1&next_page=t1>; rel="next""#))
     .with_header("Content-Type", "application/json")
     .with_body(tags_p1)
     .create();
@@ -88,7 +88,7 @@ fn test_quay_tags_paginate() {
 #[test]
 fn test_quay_tags_404() {
   let name = "repo";
-  let ep = format!("/v2/{}/tags/list", name);
+  let ep = format!("/v2/{name}/tags/list");
 
   let mut server = mockito::Server::new();
   let addr = server.host_with_port();
@@ -119,7 +119,7 @@ fn test_quay_tags_404() {
 fn test_quay_tags_missing_header() {
   let name = "repo";
   let tags = r#"{"name": "repo", "tags": [ "t1", "t2" ]}"#;
-  let ep = format!("/v2/{}/tags/list", name);
+  let ep = format!("/v2/{name}/tags/list");
 
   let mut server = mockito::Server::new();
   let addr = server.host_with_port();

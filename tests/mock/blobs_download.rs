@@ -1,4 +1,4 @@
-use futures::{stream::StreamExt, FutureExt};
+use futures::{FutureExt, stream::StreamExt};
 use sha2::Digest;
 
 type Fallible<T> = Result<T, Box<dyn std::error::Error>>;

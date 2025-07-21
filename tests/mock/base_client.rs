@@ -96,7 +96,7 @@ fn test_base_api_error(fixture: String) {
   let addr = server.host_with_port();
 
   let mock = server
-    .mock("GET", format!("/v2/{}/manifests/{}", image, version).as_str())
+    .mock("GET", format!("/v2/{image}/manifests/{version}").as_str())
     .match_header("user-agent", ua)
     .with_status(404)
     .with_header(API_VERSION_K, API_VERSION_V)
@@ -187,7 +187,7 @@ mod test_custom_root_certificate {
           } else {
             let hec = he.source().unwrap();
 
-            let message = format!("{}", hec);
+            let message = format!("{hec}");
             assert!(
               message.contains("certificate verify failed"),
               "'certificate verify failed' contained in: {message}"

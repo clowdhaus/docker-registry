@@ -14,10 +14,7 @@ fn get_env() -> Option<(String, String)> {
 #[test]
 fn test_dockerio_getenv() {
   if get_env().is_none() {
-    println!(
-      "[WARN] {}: missing DOCKER_REGISTRY_DOCKER_USER / DOCKER_REGISTRY_DOCKER_PASSWD",
-      REGISTRY
-    );
+    println!("[WARN] {REGISTRY}: missing DOCKER_REGISTRY_DOCKER_USER / DOCKER_REGISTRY_DOCKER_PASSWD");
   }
 }
 
@@ -65,7 +62,7 @@ fn test_dockerio_anonymous_auth() {
   let runtime = Runtime::new().unwrap();
   let image = "library/alpine";
   let version = "latest";
-  let login_scope = format!("repository:{}:pull", image);
+  let login_scope = format!("repository:{image}:pull");
   let scopes = vec![login_scope.as_str()];
   let client_future = docker_registry::v2::Client::configure()
     .registry(REGISTRY)
@@ -90,7 +87,7 @@ fn test_dockerio_anonymous_non_existent_image() {
   let runtime = Runtime::new().unwrap();
   let image = "bad/image";
   let version = "latest";
-  let login_scope = format!("repository:{}:pull", image);
+  let login_scope = format!("repository:{image}:pull");
   let scopes = vec![login_scope.as_str()];
   let dclient_future = docker_registry::v2::Client::configure()
     .registry(REGISTRY)
@@ -116,7 +113,7 @@ fn test_dockerio_anonymous_auth_oci_manifest() {
   let runtime = Runtime::new().unwrap();
   let image = "s390x/ubuntu";
   let version = "latest";
-  let login_scope = format!("repository:{}:pull", image);
+  let login_scope = format!("repository:{image}:pull");
   let scopes = vec![login_scope.as_str()];
   let dclient_future = docker_registry::v2::Client::configure()
     .registry(REGISTRY)

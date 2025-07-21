@@ -98,22 +98,20 @@ impl Client {
     // GET request to bare v2 endpoint.
     let v2_endpoint = format!("{}/v2/", self.base_url);
     let request = reqwest::Url::parse(&v2_endpoint).map(|url| {
-      trace!("GET {:?}", url);
+      trace!("GET {url:?}");
       self.build_reqwest(Method::GET, url)
     })?;
 
     let response = request.send().await?;
 
-    let b = match (response.status(), response.headers().get(api_header)) {
+    match (response.status(), response.headers().get(api_header)) {
       (StatusCode::OK, Some(x)) => Ok((x == api_version, true)),
       (StatusCode::UNAUTHORIZED, Some(x)) => Ok((x == api_version, false)),
       (s, v) => {
-        trace!("Got unexpected status {}, header version {:?}", s, v);
-        return Err(crate::Error::UnexpectedHttpStatus(s));
+        trace!("Got unexpected status {s}, header version {v:?}");
+        Err(crate::Error::UnexpectedHttpStatus(s))
       }
-    };
-
-    b
+    }
   }
 
   /// Takes reqwest's async RequestBuilder and injects an authentication header if a token is present
@@ -158,10 +156,10 @@ impl fmt::Display for ApiError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(f, "({})", self.code)?;
     if let Some(message) = &self.message {
-      write!(f, ", message: {}", message)?;
+      write!(f, ", message: {message}")?;
     }
     if let Some(detail) = &self.detail {
-      write!(f, ", detail: {}", detail)?;
+      write!(f, ", detail: {detail}")?;
     }
     Ok(())
   }
@@ -190,7 +188,7 @@ impl fmt::Display for ApiErrors {
       return Ok(());
     }
     for error in self.errors.as_ref().unwrap().iter() {
-      write!(f, "({})", error)?
+      write!(f, "({error})")?
     }
     Ok(())
   }

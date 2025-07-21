@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 
 use log::{trace, warn};
 use regex_lite::Regex;
-use reqwest::{header::HeaderValue, RequestBuilder, StatusCode, Url};
+use reqwest::{RequestBuilder, StatusCode, Url, header::HeaderValue};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -69,7 +69,7 @@ impl BearerAuth {
     bearer_header_content: WwwAuthenticateHeaderContentBearer,
   ) -> Result<Self> {
     let auth_ep = bearer_header_content.auth_ep(scopes);
-    trace!("authenticate: token endpoint: {}", auth_ep);
+    trace!("authenticate: token endpoint: {auth_ep}");
 
     let url = reqwest::Url::parse(&auth_ep)?;
 
@@ -88,7 +88,7 @@ impl BearerAuth {
 
     let r = auth_req.send().await?;
     let status = r.status();
-    trace!("authenticate: got status {}", status);
+    trace!("authenticate: got status {status}");
     if status != StatusCode::OK {
       return Err(Error::UnexpectedHttpStatus(status));
     }
@@ -107,7 +107,7 @@ impl BearerAuth {
     let mut masked_token = bearer_auth.token.clone();
     masked_token.replace_range(mask_start..mask_end, &"*".repeat(mask_end - mask_start));
 
-    trace!("authenticate: got token: {:?}", masked_token);
+    trace!("authenticate: got token: {masked_token:?}");
 
     Ok(bearer_auth)
   }
@@ -201,10 +201,7 @@ impl WwwAuthenticateHeaderContent {
       })?;
 
     if !unsupported_keys.is_empty() {
-      warn!(
-        "skipping unrecognized keys in authentication header: {:#?}",
-        unsupported_keys
-      );
+      warn!("skipping unrecognized keys in authentication header: {unsupported_keys:#?}");
     }
 
     Ok(content)
@@ -224,7 +221,7 @@ impl WwwAuthenticateHeaderContentBearer {
     let service = self
       .service
       .as_ref()
-      .map(|sv| format!("?service={}", sv))
+      .map(|sv| format!("?service={sv}"))
       .unwrap_or_default();
 
     let scope = scopes.iter().enumerate().fold(String::new(), |acc, (i, &s)| {
@@ -315,9 +312,9 @@ impl Client {
 
     let req = self.build_reqwest(Method::GET, url.clone());
 
-    trace!("Sending request to '{}'", url);
+    trace!("Sending request to '{url}'");
     let resp = req.send().await?;
-    trace!("GET '{:?}'", resp);
+    trace!("GET '{resp:?}'");
 
     let status = resp.status();
     match status {
@@ -342,28 +339,23 @@ mod tests {
 
     for header_value in [
       HeaderValue::from_str(&format!(
-        r#"Bearer realm="{}",service="{}",scope="{}""#,
-        realm, service, scope
+        r#"Bearer realm="{realm}",service="{service}",scope="{scope}""#
       ))
       .unwrap(),
       HeaderValue::from_str(&format!(
-        r#"bearer realm="{}",service="{}",scope="{}""#,
-        realm, service, scope
+        r#"bearer realm="{realm}",service="{service}",scope="{scope}""#
       ))
       .unwrap(),
       HeaderValue::from_str(&format!(
-        r#"BEARER realm="{}",service="{}",scope="{}""#,
-        realm, service, scope
+        r#"BEARER realm="{realm}",service="{service}",scope="{scope}""#
       ))
       .unwrap(),
       HeaderValue::from_str(&format!(
-        r#"Bearer Realm="{}",Service="{}",Scope="{}""#,
-        realm, service, scope
+        r#"Bearer Realm="{realm}",Service="{service}",Scope="{scope}""#
       ))
       .unwrap(),
       HeaderValue::from_str(&format!(
-        r#"Bearer REALM="{}",SERVICE="{}",SCOPE="{}""#,
-        realm, service, scope
+        r#"Bearer REALM="{realm}",SERVICE="{service}",SCOPE="{scope}""#
       ))
       .unwrap(),
     ]
@@ -398,11 +390,11 @@ mod tests {
     let realm = "Registry realm";
 
     for header_value in [
-      HeaderValue::from_str(&format!(r#"Basic realm="{}""#, realm)).unwrap(),
-      HeaderValue::from_str(&format!(r#"basic realm="{}""#, realm)).unwrap(),
-      HeaderValue::from_str(&format!(r#"BASIC realm="{}""#, realm)).unwrap(),
-      HeaderValue::from_str(&format!(r#"Basic Realm="{}""#, realm)).unwrap(),
-      HeaderValue::from_str(&format!(r#"Basic REALM="{}""#, realm)).unwrap(),
+      HeaderValue::from_str(&format!(r#"Basic realm="{realm}""#)).unwrap(),
+      HeaderValue::from_str(&format!(r#"basic realm="{realm}""#)).unwrap(),
+      HeaderValue::from_str(&format!(r#"BASIC realm="{realm}""#)).unwrap(),
+      HeaderValue::from_str(&format!(r#"Basic Realm="{realm}""#)).unwrap(),
+      HeaderValue::from_str(&format!(r#"Basic REALM="{realm}""#)).unwrap(),
     ]
     .iter()
     {

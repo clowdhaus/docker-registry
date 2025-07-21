@@ -45,10 +45,7 @@ fn common_init(login_scope: Option<&str>) -> Option<(tokio::runtime::Runtime, do
 #[test]
 fn test_quayio_getenv() {
   if get_env().is_none() {
-    println!(
-      "[WARN] {}: missing DOCKER_REGISTRY_QUAY_USER / DOCKER_REGISTRY_QUAY_PASSWD",
-      REGISTRY
-    );
+    println!("[WARN] {REGISTRY}: missing DOCKER_REGISTRY_QUAY_USER / DOCKER_REGISTRY_QUAY_PASSWD");
   }
 }
 
@@ -164,7 +161,7 @@ fn test_quayio_get_tags_pagination() {
 #[test]
 fn test_quayio_auth_tags() {
   let image = "steveej/cincinnati-test";
-  let login_scope = format!("repository:{}:pull", image);
+  let login_scope = format!("repository:{image}:pull");
   let (runtime, client) = common_init(Some(&login_scope)).unwrap();
 
   let tags = runtime
@@ -201,7 +198,7 @@ fn test_quayio_has_manifest() {
 fn test_quayio_auth_manifest() {
   let image = "steveej/cincinnati-test";
   let reference = "0.0.1";
-  let login_scope = format!("repository:{}:pull", image);
+  let login_scope = format!("repository:{image}:pull");
   let (runtime, client) = common_init(Some(&login_scope)).unwrap();
 
   let fut_has_manifest = client.has_manifest(image, reference, None);
@@ -235,7 +232,7 @@ fn test_quayio_auth_manifestref_missing() {
   let image = "steveej/cincinnati-test";
   let tag = "no-such-tag";
 
-  let login_scope = format!("repository:{}:pull", image);
+  let login_scope = format!("repository:{image}:pull");
   let (runtime, client) = common_init(Some(&login_scope)).unwrap();
   let fut_actual = async { client.get_manifestref(image, tag).await };
   let actual = runtime.block_on(fut_actual);
@@ -249,7 +246,7 @@ fn test_quayio_auth_manifestref() {
   let tag = "0.0.1";
   let expected = String::from("sha256:cc1f79c6a6fc92982a10ced91bddeefb8fbd037a01ae106a64d0a7e79d0e4813");
 
-  let login_scope = format!("repository:{}:pull", image);
+  let login_scope = format!("repository:{image}:pull");
   let (runtime, client) = common_init(Some(&login_scope)).unwrap();
   let fut_actual = async { client.get_manifestref(image, tag).await.unwrap() };
   let actual = runtime.block_on(fut_actual).unwrap();
@@ -264,7 +261,7 @@ fn test_quayio_auth_layer_blob() {
   let layer0_sha = "sha256:ef11b765159341c08891fb84fa57d4a094903dd79059a2f8af9e1c3babda74e5";
   let layer0_len: usize = 198;
 
-  let login_scope = format!("repository:{}:pull", image);
+  let login_scope = format!("repository:{image}:pull");
   let (runtime, client) = common_init(Some(&login_scope)).unwrap();
 
   let fut_layer0_blob = async {
@@ -274,9 +271,9 @@ fn test_quayio_auth_layer_blob() {
       .and_then(|manifest| {
         let layers: Vec<String> = manifest.layers_digests(None)?;
         let num_layers = layers.len();
-        assert!(num_layers == 1, "layers length: {}", num_layers);
+        assert!(num_layers == 1, "layers length: {num_layers}");
         let digest = layers[0].clone();
-        assert!(digest == layer0_sha, "layer0 digest: {}", digest);
+        assert!(digest == layer0_sha, "layer0 digest: {digest}");
         Ok(digest)
       })
       .unwrap();

@@ -1,7 +1,7 @@
 use std::{iter::FromIterator, str::FromStr};
 
 use log::{debug, trace};
-use reqwest::{self, header, StatusCode, Url};
+use reqwest::{self, StatusCode, Url, header};
 
 use crate::{
   errors::{Error, Result},
@@ -66,7 +66,7 @@ impl Client {
     let header_content_type = headers.get(header::CONTENT_TYPE);
     let media_type = evaluate_media_type(header_content_type, &url)?;
 
-    trace!("content-type: {:?}, media-type: {:?}", header_content_type, media_type);
+    trace!("content-type: {header_content_type:?}, media-type: {media_type:?}");
 
     match media_type {
       mediatypes::MediaTypes::ManifestV2S1Signed => Ok((
@@ -151,7 +151,7 @@ impl Client {
       accept_headers.insert(header::ACCEPT, header_value);
     }
 
-    trace!("HEAD {:?}", url);
+    trace!("HEAD {url:?}");
 
     let r = self
       .build_reqwest(Method::HEAD, url.clone())
@@ -167,7 +167,7 @@ impl Client {
     match status {
       StatusCode::MOVED_PERMANENTLY | StatusCode::TEMPORARY_REDIRECT | StatusCode::FOUND | StatusCode::OK => {
         let media_type = evaluate_media_type(r.headers().get(header::CONTENT_TYPE), r.url())?;
-        trace!("Manifest media-type: {:?}", media_type);
+        trace!("Manifest media-type: {media_type:?}");
         Ok(Some(media_type))
       }
       StatusCode::NOT_FOUND => Ok(None),
@@ -177,8 +177,7 @@ impl Client {
 }
 
 fn to_mimes(v: &[&str]) -> Vec<mime::Mime> {
-  let res = v
-    .iter()
+  v.iter()
     .filter_map(|x| {
       let mtype = mediatypes::MediaTypes::from_str(x);
       match mtype {
@@ -186,8 +185,7 @@ fn to_mimes(v: &[&str]) -> Vec<mime::Mime> {
         _ => None,
       }
     })
-    .collect();
-  res
+    .collect()
 }
 
 // Evaluate the `MediaTypes` from the the request header.
@@ -214,8 +212,7 @@ fn evaluate_media_type(
         }
         _ => {
           debug!(
-            "Received content-type '{}' from pulp-based registry. Feeling lucky and trying to parse it...",
-            header_value
+            "Received content-type '{header_value}' from pulp-based registry. Feeling lucky and trying to parse it...",
           );
           mediatypes::MediaTypes::from_str(header_value).map_err(strum::ParseError::into)
         }
@@ -238,7 +235,7 @@ fn build_accept_headers(accepted_types: &[(MediaTypes, Option<f64>)]) -> header:
         ty,
         match q {
           None => String::default(),
-          Some(v) => format!("; q={}", v),
+          Some(v) => format!("; q={v}"),
         }
       )
     })
@@ -307,7 +304,7 @@ impl Manifest {
         Ok(m.get_layers())
       }
       (Manifest::ML(m), _, _) => Ok(m.get_digests()),
-      _ => Err(ManifestError::LayerDigestsUnsupported(format!("{:?}", self)).into()),
+      _ => Err(ManifestError::LayerDigestsUnsupported(format!("{self:?}")).into()),
     }
   }
 

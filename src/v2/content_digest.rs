@@ -120,7 +120,7 @@ mod tests {
       "invalid:0000000000000000000000000000000000000000000000000000000000000000",
     ] {
       if ContentDigest::try_new(incorrect_digest).is_ok() {
-        panic!("expected try_new to fail for incorrect digest {}", incorrect_digest);
+        panic!("expected try_new to fail for incorrect digest {incorrect_digest}");
       }
     }
   }

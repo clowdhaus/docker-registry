@@ -41,10 +41,7 @@ fn test_catalog_paginate() {
   let mock = server
     .mock("GET", "/v2/_catalog?n=1")
     .with_status(200)
-    .with_header(
-      "Link",
-      &format!(r#"<{}/v2/_catalog?n=21&last=r1/i1>; rel="next""#, addr),
-    )
+    .with_header("Link", &format!(r#"<{addr}/v2/_catalog?n=21&last=r1/i1>; rel="next""#))
     .with_header("Content-Type", "application/json")
     .with_body(repos_p1)
     .create();

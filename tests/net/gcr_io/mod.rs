@@ -15,10 +15,7 @@ fn get_env() -> Option<(String, String)> {
 #[test]
 fn test_dockerio_getenv() {
   if get_env().is_none() {
-    println!(
-      "[WARN] {}: missing DOCKER_REGISTRY_GCR_USER / DOCKER_REGISTRY_GCR_PASSWD",
-      REGISTRY
-    );
+    println!("[WARN] {REGISTRY}: missing DOCKER_REGISTRY_GCR_USER / DOCKER_REGISTRY_GCR_PASSWD");
   }
 }
 

@@ -44,7 +44,7 @@ impl Client {
     match resp.error_for_status_ref() {
       Ok(_) => {
         if let Some(len) = resp.content_length() {
-          trace!("Receiving a blob with {} bytes", len);
+          trace!("Receiving a blob with {len} bytes");
         } else {
           trace!("Receiving a blob");
         }
@@ -53,7 +53,7 @@ impl Client {
       Err(_) if status.is_client_error() => Err(ApiErrors::from(resp).await),
       Err(_) if status.is_server_error() => Err(Error::Server { status }),
       Err(_) => {
-        error!("Received unexpected HTTP status '{}'", status);
+        error!("Received unexpected HTTP status '{status}'");
         Err(Error::UnexpectedHttpStatus(status))
       }
     }

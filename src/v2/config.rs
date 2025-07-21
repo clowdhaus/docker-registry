@@ -83,9 +83,7 @@ impl Config {
     };
     trace!(
       "Built client for {:?}: endpoint {:?} - user {:?}",
-      self.index,
-      base,
-      self.username
+      self.index, base, self.username
     );
     let creds = match (self.username, self.password) {
       (None, None) => None,

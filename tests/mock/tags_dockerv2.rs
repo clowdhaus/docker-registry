@@ -48,7 +48,7 @@ fn test_dockerv2_tags_paginate() {
   let mock1 = server
     .mock("GET", ep1.as_str())
     .with_status(200)
-    .with_header("Link", &format!(r#"<{}/v2/_tags?n=1&last=t1>; rel="next""#, addr))
+    .with_header("Link", &format!(r#"<{addr}/v2/_tags?n=1&last=t1>; rel="next""#))
     .with_header("Content-Type", "application/json")
     .with_body(tags_p1)
     .create();
