@@ -1,7 +1,8 @@
+use std::collections::HashMap;
+
 use log::trace;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::errors::Result;
 pub use crate::v2::ApiErrors;
