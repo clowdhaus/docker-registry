@@ -76,11 +76,21 @@ impl Config {
 
   /// Return a `Client` to interact with a v2 registry.
   pub fn build(self) -> Result<Client> {
-    let base = if self.insecure_registry {
-      "http://".to_string() + &self.index
+    // Only allow HTTP if registry is localhost/127.0.0.1
+    if self.insecure_registry {
+      let index = self.index.to_ascii_lowercase();
+      if !(index == "localhost" || index.starts_with("localhost:")
+            || index == "127.0.0.1" || index.starts_with("127.0.0.1:")) {
+        return Err(crate::errors::Error::Other(
+          format!("Refusing to connect to non-local registry over HTTP: {}", self.index)
+        ));
+      }
+      trace!("Warning: using insecure HTTP connection to local registry");
+      let base = "http://".to_string() + &self.index;
+      base
     } else {
       "https://".to_string() + &self.index
-    };
+    }
     trace!(
       "Built client for {:?}: endpoint {:?} - user {:?}",
       self.index, base, self.username
