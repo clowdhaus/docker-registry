@@ -1,5 +1,7 @@
-use std::convert::{TryFrom, TryInto};
-use std::sync::LazyLock;
+use std::{
+  convert::{TryFrom, TryInto},
+  sync::LazyLock,
+};
 
 use log::{trace, warn};
 use regex_lite::Regex;
