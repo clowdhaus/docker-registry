@@ -29,6 +29,10 @@ pub enum MediaTypes {
   #[strum(serialize = "application/vnd.docker.image.rootfs.diff.tar.gzip")]
   #[strum(props(Sub = "vnd.docker.image.rootfs.diff.tar.gzip"))]
   ImageLayerTgz,
+  /// Image layer, as a zstd-compressed tar.
+  #[strum(serialize = "application/vnd.oci.image.layer.v1.tar+zstd")]
+  #[strum(props(Sub = "vnd.oci.image.layer.v1.tar+zstd"))]
+  ImageLayerZstd,
   /// Configuration object for a container.
   #[strum(serialize = "application/vnd.docker.container.image.v1+json")]
   #[strum(props(Sub = "vnd.docker.container.image.v1+json"))]
@@ -64,6 +68,7 @@ impl MediaTypes {
         ("vnd.docker.distribution.manifest.v2", "json") => Ok(MediaTypes::ManifestV2S2),
         ("vnd.docker.distribution.manifest.list.v2", "json") => Ok(MediaTypes::ManifestList),
         ("vnd.docker.image.rootfs.diff.tar.gzip", _) => Ok(MediaTypes::ImageLayerTgz),
+        ("vnd.oci.image.layer.v1.tar", "zstd") => Ok(MediaTypes::ImageLayerZstd),
         ("vnd.docker.container.image.v1", "json") => Ok(MediaTypes::ContainerConfigV1),
         // OCI
         ("vnd.oci.image.manifest.v1", "json") => Ok(MediaTypes::OciImageManifest),
@@ -102,6 +107,7 @@ mod tests {
       MediaTypes::ManifestV2S2,
       MediaTypes::ManifestList,
       MediaTypes::ImageLayerTgz,
+      MediaTypes::ImageLayerZstd,
       MediaTypes::ContainerConfigV1,
       MediaTypes::OciImageManifest,
       MediaTypes::OciImageIndexV1,

@@ -7,6 +7,13 @@ use std::{fs, io, path};
 
 use libflate::gzip;
 
+/// Zstd magic number: 0x28B52FFD
+const ZSTD_MAGIC: [u8; 4] = [0x28, 0xB5, 0x2F, 0xFD];
+
+fn is_zstd(data: &[u8]) -> bool {
+  data.len() >= 4 && data[..4] == ZSTD_MAGIC
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
   #[error("wrong target path {}: must be absolute path to existing directory", _0.display())]
@@ -48,24 +55,32 @@ where
   })
 }
 
+fn decompress(data: &[u8]) -> Result<Box<dyn io::Read + '_>, RenderError> {
+  if is_zstd(data) {
+    Ok(Box::new(zstd::Decoder::new(data)?))
+  } else {
+    Ok(Box::new(gzip::Decoder::new(data)?))
+  }
+}
+
 fn _unpack<U>(layers: &[Vec<u8>], target_dir: &path::Path, unpacker: U) -> Result<(), RenderError>
 where
-  U: Fn(tar::Archive<gzip::Decoder<&[u8]>>, &path::Path) -> Result<(), RenderError>,
+  U: Fn(tar::Archive<Box<dyn io::Read + '_>>, &path::Path) -> Result<(), RenderError>,
 {
   if !target_dir.is_absolute() || !target_dir.exists() || !target_dir.is_dir() {
     return Err(RenderError::WrongTargetPath(target_dir.to_path_buf()));
   }
   for l in layers {
     // Unpack layers
-    let gz_dec = gzip::Decoder::new(l.as_slice())?;
-    let mut archive = tar::Archive::new(gz_dec);
+    let reader = decompress(l.as_slice())?;
+    let mut archive = tar::Archive::new(reader);
     archive.set_preserve_permissions(true);
     archive.set_unpack_xattrs(true);
     unpacker(archive, target_dir)?;
 
     // Clean whiteouts
-    let gz_dec = gzip::Decoder::new(l.as_slice())?;
-    let mut archive = tar::Archive::new(gz_dec);
+    let reader = decompress(l.as_slice())?;
+    let mut archive = tar::Archive::new(reader);
     for entry in archive.entries()? {
       let file = entry?;
       let path = file.path()?;
@@ -226,5 +241,81 @@ mod tests {
     let dir = tempfile::tempdir().unwrap();
     let result = unpack(&[b"not gzip data".to_vec()], dir.path());
     assert!(result.is_err());
+  }
+
+  /// Helper: create a zstd-compressed tar archive containing a single file.
+  fn make_zstd_layer(file_name: &str, content: &[u8]) -> Vec<u8> {
+    let mut tar_buf = Vec::new();
+    {
+      let mut builder = tar::Builder::new(&mut tar_buf);
+      let mut header = tar::Header::new_gnu();
+      header.set_path(file_name).unwrap();
+      header.set_size(content.len() as u64);
+      header.set_mode(0o644);
+      header.set_cksum();
+      builder.append(&header, content).unwrap();
+      builder.finish().unwrap();
+    }
+    zstd::encode_all(tar_buf.as_slice(), 3).unwrap()
+  }
+
+  #[test]
+  fn test_unpack_zstd_single_layer() {
+    let dir = tempfile::tempdir().unwrap();
+    let layer = make_zstd_layer("hello.txt", b"hello zstd");
+    unpack(&[layer], dir.path()).unwrap();
+    let content = fs::read_to_string(dir.path().join("hello.txt")).unwrap();
+    assert_eq!(content, "hello zstd");
+  }
+
+  #[test]
+  fn test_unpack_zstd_multiple_layers() {
+    let dir = tempfile::tempdir().unwrap();
+    let layer1 = make_zstd_layer("file1.txt", b"content1");
+    let layer2 = make_zstd_layer("file2.txt", b"content2");
+    unpack(&[layer1, layer2], dir.path()).unwrap();
+    assert_eq!(fs::read_to_string(dir.path().join("file1.txt")).unwrap(), "content1");
+    assert_eq!(fs::read_to_string(dir.path().join("file2.txt")).unwrap(), "content2");
+  }
+
+  #[test]
+  fn test_unpack_mixed_gzip_and_zstd() {
+    let dir = tempfile::tempdir().unwrap();
+    let gz_layer = make_layer("from_gzip.txt", b"gzip content");
+    let zstd_layer = make_zstd_layer("from_zstd.txt", b"zstd content");
+    unpack(&[gz_layer, zstd_layer], dir.path()).unwrap();
+    assert_eq!(
+      fs::read_to_string(dir.path().join("from_gzip.txt")).unwrap(),
+      "gzip content"
+    );
+    assert_eq!(
+      fs::read_to_string(dir.path().join("from_zstd.txt")).unwrap(),
+      "zstd content"
+    );
+  }
+
+  #[test]
+  fn test_filter_unpack_zstd() {
+    let dir = tempfile::tempdir().unwrap();
+    let layer = make_zstd_layer("include-me.txt", b"included");
+    filter_unpack(&[layer], dir.path(), |p| p.to_string_lossy().contains("include")).unwrap();
+    assert!(dir.path().join("include-me.txt").exists());
+  }
+
+  #[test]
+  fn test_whiteout_removes_file_zstd() {
+    let dir = tempfile::tempdir().unwrap();
+    let layer1 = make_zstd_layer("myfile.txt", b"content");
+    let layer2 = make_zstd_layer(".wh.myfile.txt", b"");
+    unpack(&[layer1, layer2], dir.path()).unwrap();
+    assert!(!dir.path().join("myfile.txt").exists());
+  }
+
+  #[test]
+  fn test_is_zstd_detection() {
+    assert!(is_zstd(&[0x28, 0xB5, 0x2F, 0xFD, 0x00]));
+    assert!(!is_zstd(&[0x1F, 0x8B, 0x08, 0x00])); // gzip
+    assert!(!is_zstd(&[0x00, 0x01, 0x02])); // too short
+    assert!(!is_zstd(&[]));
   }
 }
