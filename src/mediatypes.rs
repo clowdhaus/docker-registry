@@ -4,11 +4,13 @@ use strum::{Display, EnumProperty, EnumString};
 
 use crate::errors::Result;
 
-// For schema1 types, see https://docs.docker.com/registry/spec/manifest-v2-1/
-// For schema2 types, see https://docs.docker.com/registry/spec/manifest-v2-2/
+// For Docker schema1 types, see https://docs.docker.com/registry/spec/manifest-v2-1/
+// For Docker schema2 types, see https://docs.docker.com/registry/spec/manifest-v2-2/
+// For OCI types, see https://github.com/opencontainers/image-spec/blob/main/media-types.md
 
 #[derive(EnumProperty, EnumString, Display, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum MediaTypes {
+  // --- Docker types ---
   /// Manifest, version 2 schema 1.
   #[strum(serialize = "application/vnd.docker.distribution.manifest.v1+json")]
   #[strum(props(Sub = "vnd.docker.distribution.manifest.v1+json"))]
@@ -29,24 +31,46 @@ pub enum MediaTypes {
   #[strum(serialize = "application/vnd.docker.image.rootfs.diff.tar.gzip")]
   #[strum(props(Sub = "vnd.docker.image.rootfs.diff.tar.gzip"))]
   ImageLayerTgz,
-  /// Image layer, as a zstd-compressed tar.
-  #[strum(serialize = "application/vnd.oci.image.layer.v1.tar+zstd")]
-  #[strum(props(Sub = "vnd.oci.image.layer.v1.tar+zstd"))]
-  ImageLayerZstd,
+  /// Foreign image layer, as a gzip-compressed tar (e.g. Windows base layers).
+  #[strum(serialize = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip")]
+  #[strum(props(Sub = "vnd.docker.image.rootfs.foreign.diff.tar.gzip"))]
+  ImageLayerForeignTgz,
   /// Configuration object for a container.
   #[strum(serialize = "application/vnd.docker.container.image.v1+json")]
   #[strum(props(Sub = "vnd.docker.container.image.v1+json"))]
   ContainerConfigV1,
 
-  /// OCI Manifest
+  // --- OCI types ---
+  /// OCI Image Manifest.
   #[strum(serialize = "application/vnd.oci.image.manifest.v1+json")]
   #[strum(props(Sub = "vnd.oci.image.manifest.v1+json"))]
   OciImageManifest,
-  // OCI Image index
+  /// OCI Image Index (multi-platform manifest).
   #[strum(serialize = "application/vnd.oci.image.index.v1+json")]
   #[strum(props(Sub = "vnd.oci.image.index.v1+json"))]
   OciImageIndexV1,
+  /// OCI Image Config.
+  #[strum(serialize = "application/vnd.oci.image.config.v1+json")]
+  #[strum(props(Sub = "vnd.oci.image.config.v1+json"))]
+  OciImageConfig,
+  /// OCI Image Layer, as an uncompressed tar.
+  #[strum(serialize = "application/vnd.oci.image.layer.v1.tar")]
+  #[strum(props(Sub = "vnd.oci.image.layer.v1.tar"))]
+  OciImageLayerTar,
+  /// OCI Image Layer, as a gzip-compressed tar.
+  #[strum(serialize = "application/vnd.oci.image.layer.v1.tar+gzip")]
+  #[strum(props(Sub = "vnd.oci.image.layer.v1.tar+gzip"))]
+  OciImageLayerTgz,
+  /// OCI Image Layer, as a zstd-compressed tar.
+  #[strum(serialize = "application/vnd.oci.image.layer.v1.tar+zstd")]
+  #[strum(props(Sub = "vnd.oci.image.layer.v1.tar+zstd"))]
+  OciImageLayerZstd,
+  /// OCI Empty descriptor (scratch/unused).
+  #[strum(serialize = "application/vnd.oci.empty.v1+json")]
+  #[strum(props(Sub = "vnd.oci.empty.v1+json"))]
+  OciEmptyV1,
 
+  // --- Generic ---
   /// Generic JSON
   #[strum(serialize = "application/json")]
   #[strum(props(Sub = "json"))]
@@ -61,6 +85,10 @@ impl MediaTypes {
       (mime::APPLICATION, subt, None) if subt == "vnd.docker.image.rootfs.diff.tar.gzip" => {
         Ok(MediaTypes::ImageLayerTgz)
       }
+      (mime::APPLICATION, subt, None) if subt == "vnd.docker.image.rootfs.foreign.diff.tar.gzip" => {
+        Ok(MediaTypes::ImageLayerForeignTgz)
+      }
+      (mime::APPLICATION, subt, None) if subt == "vnd.oci.image.layer.v1.tar" => Ok(MediaTypes::OciImageLayerTar),
       (mime::APPLICATION, subt, Some(suff)) => match (subt.to_string().as_str(), suff.to_string().as_str()) {
         // Docker
         ("vnd.docker.distribution.manifest.v1", "json") => Ok(MediaTypes::ManifestV2S1),
@@ -68,11 +96,15 @@ impl MediaTypes {
         ("vnd.docker.distribution.manifest.v2", "json") => Ok(MediaTypes::ManifestV2S2),
         ("vnd.docker.distribution.manifest.list.v2", "json") => Ok(MediaTypes::ManifestList),
         ("vnd.docker.image.rootfs.diff.tar.gzip", _) => Ok(MediaTypes::ImageLayerTgz),
-        ("vnd.oci.image.layer.v1.tar", "zstd") => Ok(MediaTypes::ImageLayerZstd),
+        ("vnd.docker.image.rootfs.foreign.diff.tar.gzip", _) => Ok(MediaTypes::ImageLayerForeignTgz),
         ("vnd.docker.container.image.v1", "json") => Ok(MediaTypes::ContainerConfigV1),
         // OCI
         ("vnd.oci.image.manifest.v1", "json") => Ok(MediaTypes::OciImageManifest),
         ("vnd.oci.image.index.v1", "json") => Ok(MediaTypes::OciImageIndexV1),
+        ("vnd.oci.image.config.v1", "json") => Ok(MediaTypes::OciImageConfig),
+        ("vnd.oci.image.layer.v1.tar", "gzip") => Ok(MediaTypes::OciImageLayerTgz),
+        ("vnd.oci.image.layer.v1.tar", "zstd") => Ok(MediaTypes::OciImageLayerZstd),
+        ("vnd.oci.empty.v1", "json") => Ok(MediaTypes::OciEmptyV1),
         _ => Err(crate::Error::UnknownMimeType(mtype.clone())),
       },
       _ => Err(crate::Error::UnknownMimeType(mtype.clone())),
@@ -107,10 +139,15 @@ mod tests {
       MediaTypes::ManifestV2S2,
       MediaTypes::ManifestList,
       MediaTypes::ImageLayerTgz,
-      MediaTypes::ImageLayerZstd,
+      MediaTypes::ImageLayerForeignTgz,
       MediaTypes::ContainerConfigV1,
       MediaTypes::OciImageManifest,
       MediaTypes::OciImageIndexV1,
+      MediaTypes::OciImageConfig,
+      MediaTypes::OciImageLayerTar,
+      MediaTypes::OciImageLayerTgz,
+      MediaTypes::OciImageLayerZstd,
+      MediaTypes::OciEmptyV1,
       MediaTypes::ApplicationJson,
     ];
     for mt in &types {
