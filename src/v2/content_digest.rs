@@ -1,5 +1,6 @@
 use std::str;
 
+use base16ct::HexDisplay;
 /// Implements types and methods for content verification
 use sha2::{self, Digest};
 
@@ -92,7 +93,7 @@ impl DigestAlgorithm {
     let (algo, digest) = match self {
       DigestAlgorithm::Sha256(hash) => ("sha256", hash.finalize()),
     };
-    format!("{}:{:x}", algo, &digest)
+    format!("{}:{:x}", algo, HexDisplay(&digest))
   }
 }
 

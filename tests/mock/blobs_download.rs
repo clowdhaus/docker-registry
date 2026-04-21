@@ -63,7 +63,7 @@ async fn test_blobs_hasnot_layer() {
 async fn get_blobs_succeeds_with_consistent_layer() -> Fallible<()> {
   let name = "my-repo/my-image";
   let blob = b"hello";
-  let digest = format!("sha256:{:x}", sha2::Sha256::digest(blob));
+  let digest = format!("sha256:{:x}", base16ct::HexDisplay(&sha2::Sha256::digest(blob)));
   let ep = format!("/v2/{name}/blobs/{digest}");
 
   let mut server = mockito::Server::new_async().await;
@@ -96,7 +96,7 @@ async fn get_blobs_fails_with_inconsistent_layer() -> Fallible<()> {
   let name = "my-repo/my-image";
   let blob = b"hello";
   let blob2 = b"hello2";
-  let digest = format!("sha256:{:x}", sha2::Sha256::digest(blob));
+  let digest = format!("sha256:{:x}", base16ct::HexDisplay(&sha2::Sha256::digest(blob)));
   let ep = format!("/v2/{name}/blobs/{digest}");
 
   let mut server = mockito::Server::new_async().await;
@@ -130,7 +130,7 @@ async fn get_blobs_fails_with_inconsistent_layer() -> Fallible<()> {
 async fn get_blobs_stream() -> Fallible<()> {
   let name = "my-repo/my-image";
   let blob = b"hello";
-  let digest = format!("sha256:{:x}", sha2::Sha256::digest(blob));
+  let digest = format!("sha256:{:x}", base16ct::HexDisplay(&sha2::Sha256::digest(blob)));
   let ep = format!("/v2/{name}/blobs/{digest}");
 
   let mut server = mockito::Server::new_async().await;
