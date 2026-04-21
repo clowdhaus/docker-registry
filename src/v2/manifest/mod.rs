@@ -180,6 +180,30 @@ impl Client {
       _ => Err(ApiErrors::from(r).await),
     }
   }
+
+  /// Delete an image manifest.
+  ///
+  /// The name and reference parameters identify the image.
+  /// The reference _must_ be a digest.
+  pub async fn delete_manifest(&self, name: &str, reference: &str) -> Result<()> {
+    let url = self.build_url(name, reference)?;
+
+    let accept_headers = build_accept_headers(&self.accepted_types);
+
+    let res = self
+      .build_reqwest(Method::DELETE, url)
+      .headers(accept_headers)
+      .send()
+      .await?;
+
+    let status = res.status();
+    trace!("DELETE '{}' status: {:?}", res.url(), status);
+
+    match status {
+      StatusCode::OK | StatusCode::ACCEPTED => Ok(()),
+      _ => return Err(ApiErrors::from(res).await),
+    }
+  }
 }
 
 fn to_mimes(v: &[&str]) -> Vec<mime::Mime> {
